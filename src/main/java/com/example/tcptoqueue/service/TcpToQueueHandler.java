@@ -1,36 +1,32 @@
 package com.example.tcptoqueue.service;
 
-import org.springframework.cloud.stream.annotation.EnableBinding;
-import org.springframework.cloud.stream.messaging.Processor;
-import org.springframework.messaging.Message;
-import org.springframework.messaging.support.MessageBuilder;
-import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-@Service
-@EnableBinding(Processor.class)
+import org.springframework.cloud.stream.messaging.Processor;
+import org.springframework.integration.annotation.MessageEndpoint;
+import org.springframework.integration.annotation.ServiceActivator;
+import org.springframework.messaging.Message;
+
+@MessageEndpoint
 public class TcpToQueueHandler {
 
+	private static final Logger logger = LoggerFactory.getLogger(TcpToQueueHandler.class);
+
+	public static final String INPUT = "tcpIn";
+
+	@ServiceActivator(inputChannel = INPUT, outputChannel = Processor.OUTPUT)
 	public Message<String> handleTcpIn(Message<String> message) {
-		String payload = message.getPayload();
-		String replyChannel;
+		logger.info("Got a message from TCP");
 
-		try {
-			isValid(payload); // throws Exception if payload is invalid
-			replyChannel = Processor.OUTPUT;
-		} catch (Exception e) {
-			System.out.println("Invalid payload, sending to nullChannel");
-			replyChannel = "nullChannel";
-		}
+		isValid(message.getPayload());
 
-		return MessageBuilder
-				.withPayload(payload)
-				.setHeader("replyChannel", replyChannel)
-				.build();
+		return message;
 	}
 
-	private void isValid(String payload) throws Exception {
+	private void isValid(String payload) throws RuntimeException {
 		if (payload.equals("")) {
-			throw new Exception();
+			throw new RuntimeException();
 		}
 	}
 }
